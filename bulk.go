@@ -54,7 +54,8 @@ type BulkResult struct {
 	// Be conservative while we understand exactly how to report these
 	// results in a useful and convenient way, and also how to emulate
 	// them with prior servers.
-	private bool
+	private  bool
+	Upserted []upsertedResult
 }
 
 // BulkError holds an error returned from running a Bulk operation.
@@ -313,6 +314,7 @@ func (b *Bulk) runInsert(action *bulkAction, result *BulkResult, berr *BulkError
 
 func (b *Bulk) runUpdate(action *bulkAction, result *BulkResult, berr *BulkError) bool {
 	lerr, err := b.c.writeOp(bulkUpdateOp(action.docs), b.ordered)
+	result.Upserted = lerr.Upserted
 	if lerr != nil {
 		result.Matched += lerr.N
 		result.Modified += lerr.modified

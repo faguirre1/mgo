@@ -2652,6 +2652,7 @@ type LastError struct {
 
 	modified int
 	ecases   []BulkErrorCase
+	Upserted []upsertedResult
 }
 
 func (err *LastError) Error() string {
@@ -4900,14 +4901,16 @@ func (iter *Iter) replyFunc() replyFunc {
 	}
 }
 
+type upsertedResult struct {
+	Index int
+	Id    interface{} `bson:"_id"`
+}
+
 type writeCmdResult struct {
-	Ok        bool
-	N         int
-	NModified int `bson:"nModified"`
-	Upserted  []struct {
-		Index int
-		Id    interface{} `bson:"_id"`
-	}
+	Ok           bool
+	N            int
+	NModified    int `bson:"nModified"`
+	Upserted     []upsertedResult
 	ConcernError writeConcernError `bson:"writeConcernError"`
 	Errors       []writeCmdError   `bson:"writeErrors"`
 }
@@ -4964,6 +4967,12 @@ func (c *Collection) writeOp(op interface{}, ordered bool) (lerr *LastError, err
 				oplerr, err := c.writeOpCommand(socket, safeOp, op, ordered, bypassValidation)
 				lerr.N += oplerr.N
 				lerr.modified += oplerr.modified
+				if len(oplerr.Upserted) > 0 {
+					for ur := range oplerr.Upserted {
+						oplerr.Upserted[ur].Index += i
+					}
+					lerr.Upserted = append(lerr.Upserted, oplerr.Upserted...)
+				}
 				if err != nil {
 					for ei := range oplerr.ecases {
 						oplerr.ecases[ei].Index += i
@@ -5181,9 +5190,11 @@ func (c *Collection) writeOpCommand(socket *mongoSocket, safeOp *queryOp, op int
 
 		modified: result.NModified,
 		ecases:   ecases,
+		Upserted: result.Upserted,
 	}
 	if len(result.Upserted) > 0 {
 		lerr.UpsertedId = result.Upserted[0].Id
+
 	}
 	if len(result.Errors) > 0 {
 		e := result.Errors[0]

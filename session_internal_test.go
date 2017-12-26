@@ -3,7 +3,7 @@ package mgo
 import (
 	"testing"
 
-	"github.com/globalsign/mgo/bson"
+	"github.com/faguirre1/mgo/bson"
 )
 
 // This file is for testing functions that are not exported outside the mgo

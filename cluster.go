@@ -154,7 +154,7 @@ func (cluster *mongoCluster) isMaster(socket *mongoSocket, result *isMasterResul
 		var meta = bson.M{
 			"driver": bson.M{
 				"name":    "mgo",
-				"version": "globalsign",
+				"version": "faguirre1",
 			},
 			"os": bson.M{
 				"type":         runtime.GOOS,
